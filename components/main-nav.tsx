@@ -1,97 +1,121 @@
-'use client'
+"use client"
 
-import Image from "next/image"
 import Link from "next/link"
-import logo from "@/images/logo.png"
+import { usePathname } from "next/navigation"
+import { ArrowRight } from "lucide-react"
 
-import { siteConfig } from "@/config/site"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useToast } from "./ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
+import { cn, sanitizeName } from "@/lib/utils"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+
 import { useTheme } from "./shadcn-theme-provider"
-import { sanitizeName } from "@/lib/utils"
+import { Badge } from "./ui/badge"
 
-export function copyToClipboard(value: string) {
-  navigator.clipboard.writeText(value);
+const examples = [
+  {
+    name: "Home",
+    href: "/home",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/dashboard",
+  },
+  {
+    name: "Dashboard",
+    href: "/dashboard",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/dashboard",
+  },
+  {
+    name: "Cards",
+    href: "/cards",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/cards",
+  },
+  {
+    name: "Tasks",
+    href: "/tasks",
+    label: "New",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/tasks",
+  },
+  {
+    name: "Playground",
+    href: "/playground",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/playground",
+  },
+  {
+    name: "Forms",
+    href: "/forms",
+    label: "New",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/forms",
+  },
+  {
+    name: "Music",
+    href: "/music",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/music",
+  },
+  {
+    name: "Authentication",
+    href: "/authentication",
+    code: "https://github.com/shadcn/ui/tree/main/apps/www/app/examples/authentication",
+  },
+]
+
+interface MainNavProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+// TODO - this can be a server component
+
+export function MainNav({ className, ...props }: MainNavProps) {
+  const pathname = usePathname()
+  const { currentTheme } = useTheme()
+
+  const themePath = sanitizeName(currentTheme.name)
+
+  return (
+    <div className="relative">
+      <ScrollArea className="max-w-[600px] lg:max-w-none">
+        <div className={cn("mb-4 flex items-center", className)} {...props}>
+          {examples.map((example) => (
+            <Link
+              href={`/${themePath}${example.href}`}
+              key={example.href}
+              className={cn(
+                "hidden items-center px-4 md:flex",
+                pathname?.startsWith(`/${themePath}${example.href}`)
+                  ? "font-bold text-primary"
+                  : "font-medium text-muted-foreground"
+              )}
+            >
+              {example.name}{" "}
+              {example.label && <Badge className="ml-1">{example.label}</Badge>}
+            </Link>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" className="invisible" />
+      </ScrollArea>
+      <ExampleCodeLink
+        pathname={
+          pathname === `/${themePath}` ? `/${themePath}/home` : pathname
+        }
+      />
+    </div>
+  )
 }
 
-const redirectUrls = {
-  shadcnUi: 'https://ui.shadcn.com/',
-  uploadTheme: 'https://github.com/luisFilipePT/shadcn-ui-theme-explorer#-upload-a-theme',
-  downloadTheme: (theme: string) => {
-    if(theme === 'default') {
-      return `https://github.com/luisFilipePT/shadcn-ui-theme-explorer/tree/main/styles/global.css`
-    }
-    return `https://github.com/luisFilipePT/shadcn-ui-theme-explorer/tree/main/styles/themes/${sanitizeName(theme)}.css`}
+interface ExampleCodeLinkProps {
+  pathname: string | null
 }
 
+export function ExampleCodeLink({ pathname }: ExampleCodeLinkProps) {
+  const example = examples.find((example) => pathname?.startsWith(example.href))
 
-export function MainNav() {
-
-  const { currentTheme } = useTheme();
-
-  const { toast } = useToast()
-
-  const handleCopyURL = () => {
-    copyToClipboard(window.location.href)
-    toast({
-      title: 'URL copied to clipboard'
-    })
+  if (!example?.code) {
+    return null
   }
 
   return (
-    <div className="flex gap-6 md:gap-10">
-      <div className="flex items-center space-x-2">
-        <Image
-          src={logo}
-          alt="shadcn/ui Theme Explorer logo"
-          width="45"
-          height="45"
-        />
-        <span className="hidden font-bold md:inline-block">{siteConfig.name}</span>
-      </div>
-      <Dialog>
-        <DropdownMenu>
-          <DropdownMenuTrigger>Help</DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>
-              <Link href={redirectUrls.shadcnUi}>shadcn/ui</Link>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Link href={redirectUrls.uploadTheme}>
-                Upload a theme...
-              </Link>
-            </DropdownMenuItem>
-            <DialogTrigger asChild>
-              <DropdownMenuItem>
-                Download theme
-              </DropdownMenuItem> 
-            </DialogTrigger>
-            <DropdownMenuItem onClick={handleCopyURL}>Copy URL to share</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Ready to color your website?
-            </DialogTitle>
-            <DialogDescription>
-                  1. Copy the content from <Link href={redirectUrls.downloadTheme(currentTheme.name)} className="text-primary">
-                    this theme file.
-                  </Link> <br /> 2. Replace the content from the classes .root and .dark in your <span className="text-primary">global.css</span> file.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Link
+      href={example?.code}
+      target="_blank"
+      rel="nofollow"
+      className="absolute right-0 top-0 hidden items-center rounded-[0.5rem] text-sm font-medium md:flex"
+    >
+      View code
+      <ArrowRight className="ml-1 h-4 w-4" />
+    </Link>
   )
 }
